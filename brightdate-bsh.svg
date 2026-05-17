@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 1200 627">
+  <!-- Generator: Adobe Illustrator 30.4.0, SVG Export Plug-In . SVG Version: 2.1.4 Build 226)  -->
+  <defs>
+    <style>
+      .st0 {
+        font-family: Helvetica-Light, Helvetica;
+        font-size: 36px;
+        font-weight: 300;
+      }
+
+      .st0, .st1, .st2 {
+        isolation: isolate;
+      }
+
+      .st0, .st2 {
+        fill: #8b949e;
+      }
+
+      .st3 {
+        fill: url(#linear-gradient);
+      }
+
+      .st4 {
+        fill: #d4af37;
+        filter: url(#glow);
+        font-size: 48px;
+      }
+
+      .st4, .st2 {
+        font-family: RobotoMono-Regular, 'Roboto Mono';
+      }
+
+      .st5 {
+        stroke-opacity: .05;
+        stroke-width: .5px;
+      }
+
+      .st5, .st6, .st7 {
+        stroke: #fff;
+      }
+
+      .st8 {
+        stroke: #444c56;
+        stroke-width: 1.5px;
+      }
+
+      .st8, .st6, .st7 {
+        fill: none;
+      }
+
+      .st9 {
+        fill: #2d333b;
+        stroke: #8b949e;
+        stroke-width: 4px;
+      }
+
+      .st6 {
+        stroke-linejoin: round;
+      }
+
+      .st6, .st7 {
+        stroke-linecap: round;
+        stroke-width: 8px;
+      }
+
+      .st1 {
+        fill: #fff;
+        font-family: Helvetica-Bold, Helvetica;
+        font-size: 72px;
+        font-weight: 700;
+      }
+
+      .st2 {
+        font-size: 12px;
+        letter-spacing: .07em;
+      }
+    </style>
+    <linearGradient id="linear-gradient" x1="301.75" y1="734.72" x2="302.75" y2="733.72" gradientTransform="translate(-362098 460668.9244) scale(1200 -627)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f1115"/>
+      <stop offset="1" stop-color="#1c1f26"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur result="coloredBlur" stdDeviation="2"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect class="st3" y="0" width="1200" height="627"/>
+  <g>
+    <path class="st5" d="M0,100h1200M0,200h1200M0,300h1200M0,400h1200M0,500h1200M0,600h1200"/>
+    <path class="st5" d="M100,0v627M200,0v627M300,0v627M400,0v627M500,0v627M600,0v627M700,0v627M800,0v627M900,0v627M1000,0v627M1100,0v627"/>
+  </g>
+  <g>
+    <rect class="st9" x="80" y="240" width="120" height="120" rx="20" ry="20"/>
+    <path class="st6" d="M115,280l20,20-20,20"/>
+    <line class="st7" x1="145" y1="325" x2="165" y2="325"/>
+  </g>
+  <text class="st1" transform="translate(240 270)"><tspan x="0" y="0">BrightDate &amp; BSH</tspan></text>
+  <text class="st4" transform="translate(236.41 340.35)"><tspan x="0" y="0">9628.56525</tspan></text>
+  <text class="st0" transform="translate(580 335)"><tspan x="0" y="0">Beyond Timezones.</tspan></text>
+  <text class="st0" transform="translate(580 385)"><tspan x="0" y="0">Native Shell Precision.</tspan></text>
+  <path class="st8" d="M258,480h144c9.94,0,18,8.06,18,18h0c0,9.94-8.06,18-18,18h-144c-9.94,0-18-8.06-18-18h0c0-9.94,8.06-18,18-18Z"/>
+  <text class="st2" transform="translate(264.27 503.75)"><tspan x="0" y="0">J2000.0 ANCHORED</tspan></text>
+  <path class="st8" d="M458,480h184c9.94,0,18,8.06,18,18h0c0,9.94-8.06,18-18,18h-184c-9.94,0-18-8.06-18-18h0c0-9.94,8.06-18,18-18Z"/>
+  <text class="st2" transform="translate(455.46 503.51)"><tspan x="0" y="0">NATIVE SHELL INTEGRATION</tspan></text>
+  <path class="st8" d="M698,480h104c9.94,0,18,8.06,18,18h0c0,9.94-8.06,18-18,18h-104c-9.94,0-18-8.06-18-18h0c0-9.94,8.06-18,18-18Z"/>
+  <text class="st2" transform="translate(706.89 503.63)"><tspan x="0" y="0">LEGACY-FREE</tspan></text>
+</svg>

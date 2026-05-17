@@ -1,0 +1,1394 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Google tag (gtag.js) -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-8Q1LKFSHKN"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag('js', new Date());
+
+      gtag('config', 'G-8Q1LKFSHKN');
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="BSH SDI Agent — macOS menu-bar agent for Secure Semantic Data Injection. Decrypts OSC 7777 credential payloads from BSH in-memory, with X25519 ECDH + AES-256-GCM."
+    />
+    <title>BSH SDI Agent — Secure Semantic Data Injection for macOS</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0f1320;
+        --bg2: #0a0d18;
+        --surface: #182033;
+        --accent: #61afef;
+        --accent2: #c678dd;
+        --green: #98c379;
+        --yellow: #e5c07b;
+        --orange: #d19a66;
+        --text: #abb2bf;
+        --text-bright: #e6e6e6;
+        --border: #25304a;
+        --radius: 10px;
+        --mono:
+          'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+          sans-serif;
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      /* ── NAV ── */
+      nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(15, 19, 32, 0.92);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 2rem;
+        height: 56px;
+      }
+
+      .nav-brand {
+        font-family: var(--mono);
+        font-size: 1.05rem;
+        color: var(--accent);
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 1.5rem;
+        list-style: none;
+      }
+      .nav-links a {
+        color: var(--text);
+        text-decoration: none;
+        font-size: 0.875rem;
+        transition: color 0.2s;
+      }
+      .nav-links a:hover {
+        color: var(--text-bright);
+      }
+
+      /* ── HERO ── */
+      .hero {
+        text-align: center;
+        padding: 6rem 1.5rem 5rem;
+        background: radial-gradient(
+          ellipse 80% 50% at 50% 0%,
+          rgba(97, 175, 239, 0.14) 0%,
+          transparent 70%
+        );
+      }
+
+      .hero-eyebrow {
+        display: inline-block;
+        background: rgba(97, 175, 239, 0.15);
+        border: 1px solid rgba(97, 175, 239, 0.35);
+        color: var(--accent);
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 0.3rem 0.9rem;
+        border-radius: 999px;
+        margin-bottom: 1.5rem;
+      }
+
+      h1 {
+        font-size: clamp(2.5rem, 6vw, 4.5rem);
+        font-weight: 800;
+        color: var(--text-bright);
+        line-height: 1.15;
+        margin-bottom: 1.25rem;
+      }
+
+      h1 span {
+        color: var(--accent);
+      }
+
+      .hero-sub {
+        font-size: clamp(1rem, 2vw, 1.2rem);
+        color: var(--text);
+        max-width: 620px;
+        margin: 0 auto 2.5rem;
+      }
+
+      /* ── TERMINAL BLOCK ── */
+      .terminal {
+        display: inline-flex;
+        flex-direction: column;
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        text-align: left;
+        min-width: min(620px, 90vw);
+        max-width: 90vw;
+        overflow: hidden;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+      }
+
+      .terminal-bar {
+        background: var(--surface);
+        padding: 0.55rem 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+      }
+      .dot-red {
+        background: #ff5f57;
+      }
+      .dot-yellow {
+        background: #febc2e;
+      }
+      .dot-green {
+        background: #28c840;
+      }
+
+      .terminal-body {
+        padding: 1.25rem 1.5rem;
+      }
+
+      .cmd-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .cmd-tab {
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text);
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        padding: 0.25rem 0.75rem;
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          color 0.15s,
+          border-color 0.15s;
+      }
+      .cmd-tab:hover {
+        border-color: var(--accent);
+        color: var(--text-bright);
+      }
+      .cmd-tab.active {
+        background: rgba(97, 175, 239, 0.15);
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .cmd-panel {
+        display: none;
+      }
+      .cmd-panel.active {
+        display: block;
+      }
+
+      .cmd-line {
+        font-family: var(--mono);
+        font-size: 0.88rem;
+        line-height: 1.7;
+        white-space: normal;
+        overflow-x: auto;
+      }
+      .cmd-line > span + span {
+        margin-left: 0.5em;
+      }
+
+      .prompt {
+        color: var(--green);
+      }
+      .cmd {
+        color: var(--text-bright);
+      }
+      .out {
+        color: var(--yellow);
+      }
+      .cmt {
+        color: #6b7399;
+      }
+
+      .copy-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 0.75rem;
+        gap: 0.5rem;
+      }
+
+      .copy-btn {
+        background: rgba(198, 120, 221, 0.12);
+        border: 1px solid rgba(198, 120, 221, 0.3);
+        color: var(--accent2);
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        padding: 0.3rem 0.9rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s;
+        white-space: nowrap;
+      }
+      .copy-btn:hover {
+        background: rgba(198, 120, 221, 0.22);
+      }
+
+      /* ── HERO CTA ── */
+      .hero-ctas {
+        display: flex;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        flex-wrap: wrap;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-family: var(--mono);
+        font-size: 0.8rem;
+        padding: 0.55rem 1rem;
+        border-radius: 6px;
+        text-decoration: none;
+        transition:
+          background 0.15s,
+          border-color 0.15s;
+      }
+      .btn-primary {
+        background: rgba(97, 175, 239, 0.18);
+        border: 1px solid rgba(97, 175, 239, 0.45);
+        color: var(--accent);
+      }
+      .btn-primary:hover {
+        background: rgba(97, 175, 239, 0.3);
+      }
+      .btn-ghost {
+        border: 1px solid var(--border);
+        color: var(--text);
+      }
+      .btn-ghost:hover {
+        border-color: var(--accent);
+        color: var(--text-bright);
+      }
+
+      /* ── SECTIONS ── */
+      section {
+        padding: 5rem 1.5rem;
+      }
+      section + section {
+        border-top: 1px solid var(--border);
+      }
+
+      .container {
+        max-width: 960px;
+        margin: 0 auto;
+      }
+
+      .section-label {
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 0.75rem;
+      }
+
+      h2 {
+        font-size: clamp(1.6rem, 3vw, 2.2rem);
+        color: var(--text-bright);
+        font-weight: 700;
+        margin-bottom: 1rem;
+      }
+
+      h3 {
+        color: var(--text-bright);
+      }
+
+      p {
+        color: var(--text);
+        margin-bottom: 1rem;
+      }
+      p:last-child {
+        margin-bottom: 0;
+      }
+
+      /* ── FEATURE GRID ── */
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1.25rem;
+        margin-top: 2.5rem;
+      }
+
+      .feature-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        transition:
+          border-color 0.2s,
+          transform 0.2s;
+      }
+      .feature-card:hover {
+        border-color: var(--accent);
+        transform: translateY(-2px);
+      }
+
+      .feature-icon {
+        font-size: 1.75rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .feature-card h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+
+      .feature-card p {
+        font-size: 0.875rem;
+        margin: 0;
+      }
+
+      /* ── INSTALL STEPS ── */
+      .steps {
+        margin-top: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
+
+      .step {
+        display: flex;
+        gap: 1.25rem;
+        align-items: flex-start;
+      }
+
+      .step-num {
+        flex-shrink: 0;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(97, 175, 239, 0.15);
+        border: 1px solid rgba(97, 175, 239, 0.4);
+        color: var(--accent);
+        font-family: var(--mono);
+        font-size: 0.8rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .step-body h3 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin-bottom: 0.35rem;
+      }
+      .step-body p {
+        font-size: 0.875rem;
+        margin: 0;
+      }
+
+      code {
+        font-family: var(--mono);
+        font-size: 0.85em;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.1em 0.4em;
+        color: var(--yellow);
+      }
+
+      pre {
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1rem 1.25rem;
+        overflow-x: auto;
+        margin: 1rem 0;
+      }
+      pre code {
+        background: none;
+        border: none;
+        padding: 0;
+        color: var(--text-bright);
+        font-size: 0.85rem;
+      }
+
+      /* ── SPLIT GRIDS ── */
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-top: 2.5rem;
+      }
+      @media (max-width: 760px) {
+        .split {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.75rem;
+      }
+
+      .card h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+      }
+
+      .card p {
+        font-size: 0.9rem;
+      }
+
+      /* ── BUILTIN LIST ── */
+      .builtins {
+        margin-top: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+      }
+      .builtin {
+        display: flex;
+        align-items: baseline;
+        gap: 0.75rem;
+        font-size: 0.85rem;
+      }
+      .builtin code {
+        color: var(--green);
+        flex-shrink: 0;
+      }
+      .builtin span {
+        color: var(--text);
+      }
+
+      /* ── COMPARISON TABLE ── */
+      .bd-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+        font-size: 0.85rem;
+      }
+      .bd-table th {
+        text-align: left;
+        color: var(--accent);
+        font-family: var(--mono);
+        font-weight: 600;
+        padding: 0.5rem 0.7rem;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .bd-table td {
+        padding: 0.5rem 0.7rem;
+        color: var(--text);
+        border-bottom: 1px solid rgba(46, 49, 80, 0.5);
+        vertical-align: top;
+      }
+      .bd-table tr:last-child td {
+        border-bottom: none;
+      }
+      .bd-table td:first-child {
+        color: var(--yellow);
+        font-family: var(--mono);
+        white-space: nowrap;
+      }
+
+      /* ── MODULE TAGS ── */
+      .modules {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 1rem 0;
+      }
+      .mod-tag {
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        color: var(--accent2);
+        background: rgba(198, 120, 221, 0.1);
+        border: 1px solid rgba(198, 120, 221, 0.3);
+        border-radius: 999px;
+        padding: 0.25rem 0.7rem;
+      }
+
+      /* ── LINKS ── */
+      a.link {
+        color: var(--accent);
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+        transition: border-color 0.2s;
+      }
+      a.link:hover {
+        border-color: var(--accent);
+      }
+
+      /* ── FOOTER ── */
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 2rem 1.5rem;
+        text-align: center;
+        font-size: 0.8rem;
+        color: #555c7a;
+      }
+      footer a {
+        color: #6b7399;
+        text-decoration: none;
+      }
+      footer a:hover {
+        color: var(--text);
+      }
+      footer .footer-links {
+        display: flex;
+        justify-content: center;
+        gap: 1.5rem;
+        margin-top: 0.75rem;
+        flex-wrap: wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ── NAV ── -->
+    <nav>
+      <a class="nav-brand" href="#">sdi-agent</a>
+      <ul class="nav-links">
+        <li><a href="#what">What is SDI?</a></li>
+        <li><a href="#protocol">Protocol</a></li>
+        <li><a href="#security">Security</a></li>
+        <li><a href="#payloads">Payloads</a></li>
+        <li><a href="#install">Install</a></li>
+        <li><a href="https://bsh.digitaldefiance.org">BSH</a></li>
+        <li>
+          <a href="https://github.com/Digital-Defiance/bsh-sdi-agent">GitHub</a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- ── HERO ── -->
+    <header class="hero">
+      <div class="hero-eyebrow">� credentials, secured</div>
+      <h1>BSH <span>SDI</span> Agent</h1>
+      <p class="hero-sub">
+        The macOS menu-bar agent for
+        <a class="link" href="https://bsh.digitaldefiance.org"
+          ><strong>BSH</strong></a
+        >'s <strong>Secure Semantic Data Injection</strong> protocol. Encrypted
+        credential payloads arrive over an OSC&nbsp;7777 terminal escape, never
+        touching <code>ps</code>, shell history, or disk.
+      </p>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <span class="dot dot-red"></span>
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+        </div>
+        <div class="terminal-body">
+          <div class="cmd-line">
+            <span class="cmt"># load the SDI module in BSH</span>
+          </div>
+          <div class="cmd-line">
+            <span class="prompt">[9628.42] %</span>
+            <span class="cmd">zmodload bsh/sdi</span>
+          </div>
+          <div class="cmd-line" style="margin-top: 0.6rem">
+            <span class="cmt"
+              ># inject an ephemeral auth payload — plaintext never in
+              history</span
+            >
+          </div>
+          <div class="cmd-line">
+            <span class="prompt">[9628.42] %</span>
+            <span class="cmd"
+              >printf '{"username":"alice","password":"s3cr3t","ttl":300}'</span
+            >
+          </div>
+          <div class="cmd-line">
+            <span class="prompt"> &gt;</span>
+            <span class="cmd"
+              >| bsh-inject --type ephemeral-auth --context
+              https://app.example.com</span
+            >
+          </div>
+          <div class="cmd-line" style="margin-top: 0.6rem">
+            <span class="cmt"
+              ># OSC 7777 emitted to /dev/tty (invisible in terminal):</span
+            >
+          </div>
+          <div class="cmd-line">
+            <span class="out"
+              >\e]7777;&lt;sid&gt;;&lt;ctr&gt;;&lt;type&gt;;&lt;ctx&gt;;&lt;nonce&gt;;&lt;ct&gt;;&lt;tag&gt;\a</span
+            >
+          </div>
+          <div class="cmd-line" style="margin-top: 0.6rem">
+            <span class="cmt"
+              ># SDI Agent decrypts, stores in memory, shows in menu bar</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-ctas">
+        <a class="btn btn-primary" href="#install">Download &amp; install →</a>
+        <a
+          class="btn btn-ghost"
+          href="https://github.com/Digital-Defiance/bsh-sdi-agent"
+          >View on GitHub</a
+        >
+      </div>
+    </header>
+
+    <!-- ── MEDIA ── -->
+    <section>
+      <div class="container" style="text-align: center">
+        <div class="section-label">See it in action</div>
+        <h2>Menu bar. Lock icon. Nothing else.</h2>
+        <p style="max-width: 52rem; margin: 0 auto 2rem">
+          When a credential arrives the lock opens and shows a live entry with a
+          TTL countdown. Copy any field to the clipboard with a click. When the
+          timer expires, the entry vanishes — nothing remains.
+        </p>
+
+        <img
+          src="screenshot.png"
+          alt="BSH SDI Agent menu bar showing an active ephemeral-auth credential with TTL countdown"
+          style="
+            max-width: 100%;
+            width: 480px;
+            border-radius: var(--radius);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+            margin-bottom: 2.5rem;
+          "
+        />
+
+        <div style="max-width: 720px; margin: 0 auto">
+          <video
+            src="recording.mov"
+            controls
+            muted
+            playsinline
+            style="
+              width: 100%;
+              border-radius: var(--radius);
+              border: 1px solid rgba(255, 255, 255, 0.08);
+              box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+            "
+          >
+            Your browser does not support the video tag.
+          </video>
+          <p
+            style="
+              margin-top: 0.6rem;
+              font-size: 0.8rem;
+              color: var(--text-dim);
+            "
+          >
+            Full demo: BSH shell → <code>bsh-inject</code> → OSC&nbsp;7777 → SDI
+            Agent decrypts and shows credential in menu bar.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── WHAT IS SDI ── -->
+    <section id="what">
+      <div class="container">
+        <div class="section-label">The Problem</div>
+        <h2>Credentials don't belong in your shell history.</h2>
+        <p>
+          Every time you paste a password into a terminal, type an API token as
+          a command-line argument, or export a secret into <code>$ENV</code>,
+          you leave a trail: <code>~/.zsh_history</code>, <code>ps aux</code>,
+          <code>/proc/&lt;pid&gt;/cmdline</code>, log aggregators. Even
+          <code>read -s</code> leaves the secret in a shell variable that any
+          child process can inherit.
+        </p>
+        <p>
+          <strong style="color: var(--text-bright)"
+            >Secure Semantic Data Injection (SDI)</strong
+          >
+          is an original
+          <a class="link" href="https://bsh.digitaldefiance.org">BSH</a>
+          invention that breaks this chain. The
+          <code>bsh-inject</code> builtin encrypts a structured credential
+          payload and delivers it as an
+          <strong style="color: var(--text-bright)">OSC&nbsp;7777</strong>
+          terminal escape sequence — a channel that is invisible to the terminal
+          emulator, invisible to <code>ps</code>, and never written to command
+          history. The BSH SDI Agent is the macOS counterpart: a menu-bar daemon
+          that receives, decrypts, and acts on those payloads.
+        </p>
+
+        <div class="split">
+          <div class="card">
+            <h3>🧩 Without SDI</h3>
+            <table class="bd-table">
+              <thead>
+                <tr>
+                  <th>Surface</th>
+                  <th>Leaked to</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>CLI argument</td>
+                  <td><code>ps aux</code>, shell history</td>
+                </tr>
+                <tr>
+                  <td><code>export SECRET=…</code></td>
+                  <td>child processes, <code>env</code></td>
+                </tr>
+                <tr>
+                  <td><code>read -s</code></td>
+                  <td>shell variable, child processes</td>
+                </tr>
+                <tr>
+                  <td>Clipboard paste</td>
+                  <td>clipboard history managers</td>
+                </tr>
+                <tr>
+                  <td><code>curl -u user:pass</code></td>
+                  <td><code>ps</code>, shell history</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <h3>🔐 With SDI</h3>
+            <table class="bd-table">
+              <thead>
+                <tr>
+                  <th>Property</th>
+                  <th>Guarantee</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Shell history</td>
+                  <td>Only the <code>bsh-inject</code> call — no plaintext</td>
+                </tr>
+                <tr>
+                  <td><code>ps</code></td>
+                  <td>No secret in args or environment</td>
+                </tr>
+                <tr>
+                  <td>Disk</td>
+                  <td>Never written — in-memory only, TTL-gated</td>
+                </tr>
+                <tr>
+                  <td>Replay attacks</td>
+                  <td>Monotonic counter bound in GCM AAD</td>
+                </tr>
+                <tr>
+                  <td>Session leakage</td>
+                  <td>Ephemeral X25519 key, 8-hour expiry</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PROTOCOL ── -->
+    <section id="protocol">
+      <div class="container">
+        <div class="section-label">How it works</div>
+        <h2>Four steps from shell to agent.</h2>
+
+        <div class="split" style="margin-top: 2rem">
+          <div>
+            <div class="steps">
+              <div class="step">
+                <div
+                  class="step-num"
+                  style="
+                    background: rgba(229, 192, 123, 0.15);
+                    border-color: rgba(229, 192, 123, 0.4);
+                    color: var(--yellow);
+                  "
+                >
+                  1
+                </div>
+                <div class="step-body">
+                  <h3>X25519 handshake at login</h3>
+                  <p>
+                    When a BSH shell starts, it connects to the agent's
+                    randomized Unix domain socket (<code>$SDI_SOCKET_PATH</code>
+                    or <code>~/.config/sdi/socket</code>) and sends a 48-byte
+                    binary packet: a 16-byte random <code>session_id</code>
+                    followed by the shell's ephemeral X25519 public key. The
+                    agent responds with its own 32-byte public key. Both sides
+                    <div class="step">
+                      <div class="step-num">1</div>
+                      <div class="step-body">
+                        <h3>Install via Homebrew (Recommended)</h3>
+                        <p>
+                          The easiest way to install the notarized SDI Agent is with Homebrew:
+                        </p>
+                        <pre><code>brew tap digital-defiance/tap
+          brew install --cask bsh-sdiagent</code></pre>
+                        <p>
+                          This will install the latest signed and notarized release to your <code>/Applications</code> folder.
+                        </p>
+                      </div>
+                    </div>
+                    <div class="step">
+                      <div class="step-num">2</div>
+                      <div class="step-body">
+                        <h3>Build from source in Xcode (Advanced)</h3>
+                        <p>
+                          Clone the repository and open <code>BSH SDIAgent.xcodeproj</code> in Xcode 15 or later. Select the <strong>BSH SDIAgent</strong> scheme and press <kbd>⌘R</kbd>. No external dependencies — all cryptography uses Apple's built-in <strong>CryptoKit</strong> framework.
+                        </p>
+                        <pre><code>git clone https://github.com/Digital-Defiance/bsh-sdi-agent.git
+          cd bsh-sdi-agent
+          open "BSH SDIAgent.xcodeproj"</code></pre>
+                      </div>
+                    </div>
+                    <div class="step">
+                      <div class="step-num">3</div>
+                      <div class="step-body">
+                        <h3>Launch at login</h3>
+                        <p>
+                          Move <code>BSH SDIAgent.app</code> to <code>/Applications</code> and add it to <strong>System Settings → General → Login Items</strong> so it starts automatically with your session.
+                        </p>
+                      </div>
+                    </div>
+                    <div class="step">
+                      <div class="step-num">4</div>
+                      <div class="step-body">
+                        <h3>Install BSH</h3>
+                        <p>
+                          Install <a class="link" href="https://bsh.digitaldefiance.org">BSH</a> — the shell that generates SDI payloads. The agent advertises its socket path via <code>$SDI_SOCKET_PATH</code> and <code>~/.config/sdi/socket</code>, which BSH reads automatically at startup.
+                        </p>
+                        <pre><code>brew tap digital-defiance/tap
+          brew install bsh</code></pre>
+                      </div>
+                    </div>
+                    <div class="step">
+                      <div class="step-num">5</div>
+                      <div class="step-body">
+                        <h3>Load the SDI module and inject</h3>
+                        <p>
+                          In a BSH session, load <code>bsh/sdi</code> and use <code>bsh-inject</code> to deliver an encrypted payload. The lock icon in your menu bar will open and show the active credential with a TTL countdown.
+                        </p>
+                        <pre><code>zmodload bsh/sdi
+
+                    enforces the monotonic counter to reject replays, decrypts
+            | bsh-inject --type ephemeral-auth --context https://app.example.com</code></pre>
+                      </div>
+                    </div>
+                    the payload, and stores it in memory with its TTL. Entries
+                    appear in the menu bar with a countdown and
+                    copy-to-clipboard actions. Decrypted state is purged
+                    automatically after
+                    <code>ttl</code> seconds.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="modules" style="margin-top: 1.5rem">
+              <span class="mod-tag">X25519 ECDH</span>
+              <span class="mod-tag">AES-256-GCM</span>
+              <span class="mod-tag">HKDF-SHA256</span>
+              <span class="mod-tag">OSC 7777</span>
+              <span class="mod-tag">monotonic counter</span>
+              <span class="mod-tag">randomized socket</span>
+              <span class="mod-tag">AAD-bound auth tag</span>
+              <span class="mod-tag">fail-closed</span>
+            </div>
+          </div>
+
+          <!-- Terminal demo -->
+          <div class="terminal" style="display: block; align-self: start">
+            <div class="terminal-bar">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </div>
+            <div class="terminal-body">
+              <div class="cmd-line">
+                <span class="cmt"
+                  ># shell → agent: 48-byte binary handshake</span
+                >
+              </div>
+              <div class="cmd-line">
+                <span class="out">session_id[16] || shell_pub[32] →</span>
+              </div>
+              <div class="cmd-line">
+                <span class="out"> ← agent_pub[32]</span>
+              </div>
+              <div class="cmd-line">
+                <span class="cmt"
+                  ># HKDF-SHA256 → 32-byte session key (memory only)</span
+                >
+              </div>
+              <div class="cmd-line" style="margin-top: 0.6rem">
+                <span class="cmt"># OSC 7777 packet structure (7 fields):</span>
+              </div>
+              <div class="cmd-line">
+                <span class="out">ESC]7777;</span>
+              </div>
+              <div class="cmd-line">
+                <span class="out"> &lt;session_id_hex&gt;;</span>
+              </div>
+              <div class="cmd-line">
+                <span class="out"> &lt;b64 counter&gt;;</span>
+              </div>
+              <div class="cmd-line">
+                <span class="out"> &lt;type&gt;;</span>
+              </div>
+              <div class="cmd-line">
+                <span class="out"> &lt;b64 context&gt;;</span>
+              </div>
+              <div class="cmd-line">
+                <span class="out"> &lt;b64 nonce&gt;;</span>
+              </div>
+              <div class="cmd-line">
+                <span class="out"> &lt;b64 ciphertext&gt;;</span>
+              </div>
+              <div class="cmd-line">
+                <span class="out"> &lt;b64 auth_tag&gt;BEL</span>
+              </div>
+              <div class="cmd-line" style="margin-top: 0.6rem">
+                <span class="cmt"># counter + type + context → GCM AAD</span>
+              </div>
+              <div class="cmd-line">
+                <span class="cmt"
+                  ># agent verifies tag, checks counter, stores plaintext</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p style="margin-top: 1.5rem; font-size: 0.875rem">
+          Full specification:
+          <a
+            class="link"
+            href="https://github.com/Digital-Defiance/bsh/blob/main/docs/rfc-sdi-osc7777.md"
+          >
+            RFC — Secure Semantic Data Injection via OSC&nbsp;7777
+          </a>
+        </p>
+      </div>
+    </section>
+
+    <!-- ── SECURITY ── -->
+    <section id="security">
+      <div class="container">
+        <div class="section-label">Security model</div>
+        <h2>Defence in depth, on every surface.</h2>
+
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🎲</div>
+            <h3>Randomized socket path</h3>
+            <p>
+              Generated fresh at each launch:
+              <code>/tmp/sdi-agent-&lt;16 hex chars&gt;</code>. The agent aborts
+              immediately if the path already exists — preventing socket
+              squatting even in shared <code>/tmp</code> environments.
+              Permissions are set to <code>chmod 600</code> (owner only).
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">📦</div>
+            <h3>App Sandbox enabled</h3>
+            <p>
+              The app runs in the macOS App Sandbox. The socket path is
+              advertised via <code>launchctl setenv</code> in non-sandboxed
+              builds, and via <code>~/.config/sdi/socket</code> as a
+              sandbox-safe fallback (covered by a scoped
+              <code>home-relative-path</code> entitlement).
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🔑</div>
+            <h3>Ephemeral forward secrecy</h3>
+            <p>
+              Each BSH session generates a fresh X25519 keypair. The derived
+              32-byte session key lives only in memory and is revoked when the
+              shell disconnects. Capturing a past session key does not
+              compromise future sessions.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🔁</div>
+            <h3>Replay protection</h3>
+            <p>
+              A per-session monotonic counter is incremented with every
+              <code>bsh-inject</code> call and bound into the GCM AAD. The agent
+              tracks the next expected counter and rejects out-of-order or
+              replayed packets immediately.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🚦</div>
+            <h3>Rate limiting</h3>
+            <p>
+              Sessions are locked out after 10 decryption failures within 60
+              seconds, preventing brute-force attacks against a stolen
+              ciphertext.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">⏱️</div>
+            <h3>8-hour session expiry</h3>
+            <p>
+              Sessions expire after 8 hours regardless of activity. Credential
+              entries are additionally gated by their own <code>ttl</code> field
+              (default 300 s) and swept every 10 seconds. Nothing lingers.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🔒</div>
+            <h3>Fail-closed</h3>
+            <p>
+              If the agent is unreachable, <code>bsh-inject</code> returns an
+              error — it never falls back to emitting plaintext. Credential
+              delivery is all-or-nothing.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🧹</div>
+            <h3>Memory hygiene</h3>
+            <p>
+              Crypto keys are revoked on shell disconnect. Credential entries
+              are purged after their TTL. No data is written to disk. No crash
+              reports, analytics, or telemetry are collected.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PAYLOADS ── -->
+    <section id="payloads">
+      <div class="container">
+        <div class="section-label">Supported types</div>
+        <h2>Structured credential payloads.</h2>
+        <p>
+          Payloads are JSON objects encrypted with AES-256-GCM before leaving
+          the shell. The agent decodes them after decryption. Unknown keys are
+          ignored — the format is designed to be extensible.
+        </p>
+
+        <div class="split" style="margin-top: 2rem">
+          <div class="card">
+            <h3>🔐 <code>ephemeral-auth</code></h3>
+            <p>
+              Web login credentials, API tokens, or any short-lived secret bound
+              to a URL context.
+            </p>
+            <pre style="margin-top: 1rem"><code>{
+  "type": "ephemeral-auth",
+  "context": "https://app.example.com",
+  "ttl": 300,
+  "data": {
+    "username": "alice",
+    "password": "s3cr3t",
+    "email": "alice@example.com"
+  }
+}</code></pre>
+            <div class="builtins" style="margin-top: 1rem">
+              <div class="builtin">
+                <code>username</code><span>Copied to clipboard on request</span>
+              </div>
+              <div class="builtin">
+                <code>password</code><span>Shown as •••••••• in menu</span>
+              </div>
+              <div class="builtin">
+                <code>email</code><span>Optional; shown if present</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>🗄️ <code>db-connection</code></h3>
+            <p>
+              Database credentials: engine, host, port, user and password — all
+              in one encrypted packet.
+            </p>
+            <pre style="margin-top: 1rem"><code>{
+  "type": "db-connection",
+  "context": "postgres://localhost/mydb",
+  "ttl": 600,
+  "data": {
+    "engine": "postgres",
+    "host": "localhost",
+    "port": 5432,
+    "user": "alice",
+    "pass": "s3cr3t"
+  }
+}</code></pre>
+            <div class="builtins" style="margin-top: 1rem">
+              <div class="builtin">
+                <code>engine</code
+                ><span>e.g. <code>postgres</code>, <code>mysql</code></span>
+              </div>
+              <div class="builtin">
+                <code>host</code><span>Hostname or IP address</span>
+              </div>
+              <div class="builtin"><code>port</code><span>TCP port</span></div>
+              <div class="builtin">
+                <code>user</code> / <code>pass</code><span>Credentials</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p style="margin-top: 1.5rem; font-size: 0.875rem">
+          The menu-bar entry for each active credential shows the context URL, a
+          TTL countdown, and copy-to-clipboard actions for each field. Passwords
+          and tokens are displayed as <code>••••••••</code> in the menu title
+          but copied in full.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── INSTALL ── -->
+    <section id="install">
+      <div class="container">
+        <div class="section-label">Getting Started</div>
+        <h2>Install the agent.</h2>
+        <p>
+          The BSH SDI Agent is a macOS-only SwiftUI app. It requires
+          <strong style="color: var(--text-bright)"
+            >macOS 13 Ventura or later</strong
+          >
+          and pairs with
+          <a class="link" href="https://bsh.digitaldefiance.org">BSH</a>
+          with the <code>bsh/sdi</code> module loaded.
+        </p>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <h3>Install via Homebrew (Recommended)</h3>
+              <p>
+                The easiest way to install the notarized SDI Agent is with
+                Homebrew:
+              </p>
+              <pre><code>brew tap digital-defiance/tap
+brew install --cask bsh-sdiagent</code></pre>
+              <p>
+                This will install the latest signed and notarized release to
+                your <code>/Applications</code> folder.
+              </p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <h3>Build from source (Advanced)</h3>
+              <p>
+                Clone the repository and open
+                <code>BSH SDIAgent.xcodeproj</code> in Xcode 15 or later. Select
+                the <strong>BSH SDIAgent</strong> scheme and press
+                <kbd>⌘R</kbd>. No external dependencies — all cryptography uses
+                Apple's built-in <strong>CryptoKit</strong> framework.
+              </p>
+              <pre><code>git clone https://github.com/Digital-Defiance/bsh-sdi-agent.git
+cd bsh-sdi-agent
+open "BSH SDIAgent.xcodeproj"</code></pre>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <h3>Launch at login</h3>
+              <p>
+                Move the built <code>BSH SDIAgent.app</code> to
+                <code>/Applications</code> and add it to
+                <strong>System Settings → General → Login Items</strong> so it
+                starts automatically with your session.
+              </p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <h3>Install BSH</h3>
+              <p>
+                Install
+                <a class="link" href="https://bsh.digitaldefiance.org">BSH</a>
+                — the shell that generates SDI payloads. The agent advertises
+                its socket path via <code>$SDI_SOCKET_PATH</code> and
+                <code>~/.config/sdi/socket</code>, which BSH reads automatically
+                at startup.
+              </p>
+              <pre><code>brew tap digital-defiance/tap
+brew install bsh</code></pre>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <h3>Load the SDI module and inject</h3>
+              <p>
+                In a BSH session, load <code>bsh/sdi</code> and use
+                <code>bsh-inject</code> to deliver an encrypted payload. The
+                lock icon in your menu bar will open and show the active
+                credential with a TTL countdown.
+              </p>
+              <pre><code>zmodload bsh/sdi
+
+printf '{"username":"alice","password":"s3cr3t","ttl":300}' \
+  | bsh-inject --type ephemeral-auth --context https://app.example.com</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <p
+          style="
+            font-size: 0.9rem;
+            margin-top: 2rem;
+            padding: 0.9rem 1.1rem;
+            background: rgba(97, 175, 239, 0.07);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+          "
+        >
+          <strong style="color: var(--text-bright)">Mac App Store:</strong>
+          A notarized build distributed through the Mac App Store is coming
+          soon. Until then, use the Homebrew cask above or build from source.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── RELATED ── -->
+    <section>
+      <div class="container">
+        <div class="section-label">Related projects</div>
+        <h2>The BSH ecosystem.</h2>
+
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🐚</div>
+            <h3>
+              <a class="link" href="https://bsh.digitaldefiance.org"
+                >BSH — BrightShell</a
+              >
+            </h3>
+            <p>
+              The zsh-compatible shell that originates SDI payloads via
+              <code>bsh-inject</code>. Also features BrightDate timestamps baked
+              into every time-related surface: prompt, <code>ls -l</code>,
+              <code>stat</code>, history, and glob qualifiers.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📄</div>
+            <h3>OSC 7777 RFC</h3>
+            <p>
+              The full protocol specification: wire format, ECDH handshake, AAD
+              construction, replay-protection counters, and error handling.
+              <a
+                class="link"
+                href="https://github.com/Digital-Defiance/bsh/blob/main/docs/rfc-sdi-osc7777.md"
+                >Read the RFC →</a
+              >
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🏢</div>
+            <h3>Digital Defiance</h3>
+            <p>
+              Open-source software by
+              <a class="link" href="https://github.com/Digital-Defiance"
+                >Digital Defiance</a
+              >. BSH, the SDI Agent, BrightDate, and related tools are all
+              developed and maintained here.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── FOOTER ── -->
+    <footer>
+      <p>
+        BSH SDI Agent — macOS desktop agent for
+        <a href="https://bsh.digitaldefiance.org">BSH (BrightShell)</a> by
+        <a href="https://github.com/Digital-Defiance">Digital Defiance</a>.
+        Released under the
+        <a
+          href="https://github.com/Digital-Defiance/bsh-sdi-agent/blob/main/LICENSE"
+          >zsh license</a
+        >.
+      </p>
+      <div class="footer-links">
+        <a href="https://github.com/Digital-Defiance/bsh-sdi-agent">Source</a>
+        <a
+          href="https://github.com/Digital-Defiance/bsh-sdi-agent/blob/main/README.md"
+          >README</a
+        >
+        <a href="https://bsh.digitaldefiance.org">BSH</a>
+        <a
+          href="https://github.com/Digital-Defiance/bsh/blob/main/docs/rfc-sdi-osc7777.md"
+          >RFC</a
+        >
+        <a href="/privacy">Privacy</a>
+      </div>
+    </footer>
+  </body>
+</html>
