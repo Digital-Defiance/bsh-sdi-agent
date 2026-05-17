@@ -23,9 +23,7 @@ final class EphemeralStore {
 
     // MARK: - Lifecycle
 
-    init() {
-        startSweeper()
-    }
+    init() { }
 
     deinit {
         sweepTimer?.invalidate()
@@ -45,6 +43,7 @@ final class EphemeralStore {
         entries[payload.context] = entry
         lock.unlock()
         notifyChange()
+        rescheduleSweeper()
     }
 
     /// Remove all entries associated with a terminal session (called on disconnect).
@@ -53,6 +52,7 @@ final class EphemeralStore {
         entries = entries.filter { $0.value.sessionID != sessionID }
         lock.unlock()
         notifyChange()
+        rescheduleSweeper()
     }
 
     /// Snapshot of all currently active entries (not yet expired).
@@ -64,9 +64,20 @@ final class EphemeralStore {
 
     // MARK: - TTL Sweeper
 
-    private func startSweeper() {
-        sweepTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
-            self?.sweep()
+    /// Schedule a one-shot timer to fire the instant the nearest credential expires.
+    /// Safe to call from any thread; timer scheduling is dispatched to the main run loop.
+    private func rescheduleSweeper() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.sweepTimer?.invalidate()
+            self.lock.lock()
+            let next = self.entries.values.map(\.expiresAt).min()
+            self.lock.unlock()
+            guard let next else { return }  // no entries — no timer needed
+            let delay = max(0, next.timeIntervalSinceNow)
+            self.sweepTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
+                self?.sweep()
+            }
         }
     }
 
@@ -79,6 +90,7 @@ final class EphemeralStore {
         changed = entries.count != before
         lock.unlock()
         if changed { notifyChange() }
+        rescheduleSweeper()  // schedule for the next nearest expiry
     }
 
     private func notifyChange() {

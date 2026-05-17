@@ -4,17 +4,30 @@ import AppKit
 ///
 /// Displays a lock icon. When active credentials are present, shows a badge
 /// and a menu listing each context with its TTL countdown.
-final class MenuBarController {
+final class MenuBarController: NSObject, NSMenuDelegate {
 
     private var statusItem: NSStatusItem?
     private let store: EphemeralStore
     private var refreshTimer: Timer?
+    private let menu = NSMenu()
+    /// Maps credential context → the top-level menu item showing its TTL label.
+    private var ttlItems: [String: NSMenuItem] = [:]
+    private var menuIsOpen = false
+    /// A structural change arrived while the menu was open; rebuild on close.
+    private var pendingRebuild = false
 
     init(store: EphemeralStore) {
         self.store = store
+        super.init()
         setup()
         store.onChange = { [weak self] in
-            self?.refresh()
+            guard let self else { return }
+            if self.menuIsOpen {
+                // Can't safely removeAllItems while open — rebuild after close.
+                self.pendingRebuild = true
+            } else {
+                self.refresh()
+            }
         }
         startRefreshTimer()
     }
@@ -23,14 +36,30 @@ final class MenuBarController {
 
     private func setup() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        menu.delegate = self
+        statusItem?.menu = menu
         updateIcon(active: false)
         buildMenu()
+    }
+
+    // MARK: - NSMenuDelegate
+
+    func menuWillOpen(_ menu: NSMenu) {
+        menuIsOpen = true
+    }
+
+    func menuDidClose(_ menu: NSMenu) {
+        menuIsOpen = false
+        if pendingRebuild {
+            pendingRebuild = false
+            refresh()
+        }
     }
 
     // MARK: - Refresh
 
     private func startRefreshTimer() {
-        refreshTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             self?.refresh()
         }
     }
@@ -38,7 +67,24 @@ final class MenuBarController {
     @objc private func refresh() {
         let entries = store.activeEntries()
         updateIcon(active: !entries.isEmpty)
-        buildMenu(entries: entries)
+        if menuIsOpen {
+            // Mutate existing items in place — does not dismiss the open menu.
+            updateTTLLabels(entries: entries)
+        } else {
+            buildMenu(entries: entries)
+        }
+    }
+
+    private func updateTTLLabels(entries: [EphemeralStore.Entry]) {
+        let now = Date()
+        for entry in entries {
+            guard let item = ttlItems[entry.payload.context] else { continue }
+            let remaining = max(0, entry.expiresAt.timeIntervalSince(now))
+            let mins = Int(remaining) / 60
+            let secs = Int(remaining) % 60
+            let ttlLabel = mins > 0 ? "\(mins)m \(secs)s" : "\(secs)s"
+            item.title = "\(entry.payload.context)  [\(ttlLabel)]"
+        }
     }
 
     // MARK: - Icon
@@ -55,7 +101,8 @@ final class MenuBarController {
     // MARK: - Menu
 
     private func buildMenu(entries: [EphemeralStore.Entry] = []) {
-        let menu = NSMenu()
+        menu.removeAllItems()
+        ttlItems.removeAll()
 
         if entries.isEmpty {
             let idle = NSMenuItem(title: "No active credentials", action: nil, keyEquivalent: "")
@@ -75,6 +122,7 @@ final class MenuBarController {
                 let ttlLabel = mins > 0 ? "\(mins)m \(secs)s" : "\(secs)s"
                 let label = "\(entry.payload.context)  [\(ttlLabel)]"
                 let item = NSMenuItem(title: label, action: nil, keyEquivalent: "")
+                ttlItems[entry.payload.context] = item
 
                 let submenu = NSMenu()
 
@@ -113,7 +161,6 @@ final class MenuBarController {
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit BSH SDI Agent", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
 
-        statusItem?.menu = menu
     }
 
     // MARK: - Helpers
