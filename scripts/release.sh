@@ -131,6 +131,9 @@ echo "==> Done. Distribution files in ${DIST_DIR}/"
 ls -lh "${DIST_DIR}"/BSH-SDIAgent-"${VERSION}".*
 echo
 echo "Next steps:"
-echo "  1. Create a GitHub release tagged v${VERSION}"
-echo "  2. Upload the zip (and dmg if present) as release assets"
-echo "  3. Update your Homebrew cask with the new URL + sha256"
+echo "  1. Create a GitHub release tagged v${VERSION}:"
+echo "       ./scripts/gh-release.sh --version v${VERSION} --notes \"<release notes>\""
+echo "  2. Update the Homebrew cask:"
+echo "       ./scripts/update-cask.sh --version ${VERSION}"
+echo "  3. Commit and push homebrew-tap, then verify:"
+echo "       brew update && brew upgrade bsh-sdiagent"

@@ -503,8 +503,22 @@ final class IPCServer {
                     sessionKey: sessionKey,
                     nonce: packet.nonce,
                     ciphertext: packet.ciphertext,
-                    additionalData: aad
+                    additionalData: aad,
+                    type: packet.type,
+                    context: packet.context
                 )
+
+                // Freshness check per RFC §4: payload must include `issued_at`
+                // and fall within [now-ttl, now+60s]. Reject otherwise.
+                let now = Date().timeIntervalSince1970
+                guard payload.issuedAt > 0,
+                      payload.issuedAt <= now + 60,
+                      payload.issuedAt >= now - payload.ttl else {
+                    os_log("Freshness check failed for session %{public}@ (issued_at=%{public}f, ttl=%{public}f, now=%{public}f) — dropping.",
+                           log: sdiLog, type: .error, packet.sessionID, payload.issuedAt, payload.ttl, now)
+                    throw CryptoEngine.CryptoError.decodingFailed
+                }
+
                 sessionsLock.lock()
                 sessionFailures.removeValue(forKey: packet.sessionID)
                 sessionCounters[packet.sessionID] = counterValue + 1

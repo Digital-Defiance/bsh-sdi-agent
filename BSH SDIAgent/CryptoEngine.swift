@@ -46,17 +46,22 @@ enum CryptoEngine {
         }
     }
 
-    /// Decrypts and deserializes a full SDI packet into an `SDIPayload`.
+    /// Decrypts the ciphertext and combines the flat JSON plaintext with the
+    /// `type` / `context` fields lifted from the OSC 7777 sequence to build a
+    /// full `SDIPayload`. See `SDIPayload.decode(plaintext:type:context:)` for
+    /// the schema rationale.
     static func decryptPayload(
         sessionKey: Data,
         nonce: Data,
         ciphertext: Data,
-        additionalData: Data = Data()
+        additionalData: Data = Data(),
+        type: String,
+        context: String
     ) throws -> SDIPayload {
         let plaintext = try decrypt(sessionKey: sessionKey, nonce: nonce,
                                     ciphertext: ciphertext, additionalData: additionalData)
         do {
-            return try JSONDecoder().decode(SDIPayload.self, from: plaintext)
+            return try SDIPayload.decode(plaintext: plaintext, type: type, context: context)
         } catch {
             throw CryptoError.decodingFailed
         }

@@ -127,7 +127,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
                 let submenu = NSMenu()
 
                 // Type header
-                let typeItem = NSMenuItem(title: "Type: \(entry.payload.type.rawValue)", action: nil, keyEquivalent: "")
+                let typeItem = NSMenuItem(title: "Type: \(entry.payload.type)", action: nil, keyEquivalent: "")
                 typeItem.isEnabled = false
                 submenu.addItem(typeItem)
                 submenu.addItem(.separator())

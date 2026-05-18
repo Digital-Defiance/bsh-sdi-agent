@@ -11,9 +11,9 @@
       function gtag() {
         dataLayer.push(arguments);
       }
-      gtag('js', new Date());
+      gtag("js", new Date());
 
-      gtag('config', 'G-8Q1LKFSHKN');
+      gtag("config", "G-8Q1LKFSHKN");
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -45,7 +45,7 @@
         --border: #25304a;
         --radius: 10px;
         --mono:
-          'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+          "JetBrains Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
       }
 
       html {
@@ -56,7 +56,7 @@
         background: var(--bg);
         color: var(--text);
         font-family:
-          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
           sans-serif;
         font-size: 16px;
         line-height: 1.6;
@@ -632,30 +632,46 @@
         </div>
         <div class="terminal-body">
           <div class="cmd-line">
-            <span class="cmt"># load the SDI module in BSH</span>
+            <span class="cmt"
+              ># read password interactively — never touches shell history</span
+            >
           </div>
           <div class="cmd-line">
             <span class="prompt">[9628.42] %</span>
-            <span class="cmd">zmodload bsh/sdi</span>
+            <span class="cmd">IFS= read -rs BSH_PASS</span>
+          </div>
+          <div class="cmd-line">
+            <span class="out">Password: </span
+            ><span class="cmt">(no echo)</span>
           </div>
           <div class="cmd-line" style="margin-top: 0.6rem">
             <span class="cmt"
-              ># inject an ephemeral auth payload — plaintext never in
-              history</span
+              ># pipe JSON — $BSH_PASS is expanded, never recorded
+              literally</span
             >
           </div>
           <div class="cmd-line">
             <span class="prompt">[9628.42] %</span>
             <span class="cmd"
-              >printf '{"username":"alice","password":"s3cr3t","ttl":300}'</span
+              >printf
+              '{"username":"alice","password":"%s","ttl":300,"issued_at":%d}'
+              \</span
             >
           </div>
           <div class="cmd-line">
             <span class="prompt"> &gt;</span>
-            <span class="cmd"
-              >| bsh-inject --type ephemeral-auth --context
+            <span class="cmd"> "$BSH_PASS" "$(/bin/date +%s)" \</span>
+          </div>
+          <div class="cmd-line">
+            <span class="prompt"> &gt;</span>
+            <span class="cmd">
+              | bsh-inject --type ephemeral-auth --context
               https://app.example.com</span
             >
+          </div>
+          <div class="cmd-line">
+            <span class="prompt">[9628.42] %</span>
+            <span class="cmd">unset BSH_PASS</span>
           </div>
           <div class="cmd-line" style="margin-top: 0.6rem">
             <span class="cmt"
@@ -868,70 +884,83 @@
                     binary packet: a 16-byte random <code>session_id</code>
                     followed by the shell's ephemeral X25519 public key. The
                     agent responds with its own 32-byte public key. Both sides
-                    <div class="step">
-                      <div class="step-num">1</div>
-                      <div class="step-body">
-                        <h3>Install via Homebrew (Recommended)</h3>
-                        <p>
-                          The easiest way to install the notarized SDI Agent is with Homebrew:
-                        </p>
-                        <pre><code>brew tap digital-defiance/tap
-          brew install --cask bsh-sdiagent</code></pre>
-                        <p>
-                          This will install the latest signed and notarized release to your <code>/Applications</code> folder.
-                        </p>
-                      </div>
-                    </div>
-                    <div class="step">
-                      <div class="step-num">2</div>
-                      <div class="step-body">
-                        <h3>Build from source in Xcode (Advanced)</h3>
-                        <p>
-                          Clone the repository and open <code>BSH SDIAgent.xcodeproj</code> in Xcode 15 or later. Select the <strong>BSH SDIAgent</strong> scheme and press <kbd>⌘R</kbd>. No external dependencies — all cryptography uses Apple's built-in <strong>CryptoKit</strong> framework.
-                        </p>
-                        <pre><code>git clone https://github.com/Digital-Defiance/bsh-sdi-agent.git
-          cd bsh-sdi-agent
-          open "BSH SDIAgent.xcodeproj"</code></pre>
-                      </div>
-                    </div>
-                    <div class="step">
-                      <div class="step-num">3</div>
-                      <div class="step-body">
-                        <h3>Launch at login</h3>
-                        <p>
-                          Move <code>BSH SDIAgent.app</code> to <code>/Applications</code> and add it to <strong>System Settings → General → Login Items</strong> so it starts automatically with your session.
-                        </p>
-                      </div>
-                    </div>
-                    <div class="step">
-                      <div class="step-num">4</div>
-                      <div class="step-body">
-                        <h3>Install BSH</h3>
-                        <p>
-                          Install <a class="link" href="https://bsh.digitaldefiance.org">BSH</a> — the shell that generates SDI payloads. The agent advertises its socket path via <code>$SDI_SOCKET_PATH</code> and <code>~/.config/sdi/socket</code>, which BSH reads automatically at startup.
-                        </p>
-                        <pre><code>brew tap digital-defiance/tap
-          brew install bsh</code></pre>
-                      </div>
-                    </div>
-                    <div class="step">
-                      <div class="step-num">5</div>
-                      <div class="step-body">
-                        <h3>Load the SDI module and inject</h3>
-                        <p>
-                          In a BSH session, load <code>bsh/sdi</code> and use <code>bsh-inject</code> to deliver an encrypted payload. The lock icon in your menu bar will open and show the active credential with a TTL countdown.
-                        </p>
-                        <pre><code>zmodload bsh/sdi
+                    derive a shared 32-byte session key via HKDF-SHA256. The key
+                    lives only in memory and is bound to the shell's open socket
+                    fd.
+                  </p>
+                </div>
+              </div>
 
-                    enforces the monotonic counter to reject replays, decrypts
-            | bsh-inject --type ephemeral-auth --context https://app.example.com</code></pre>
-                      </div>
-                    </div>
-                    the payload, and stores it in memory with its TTL. Entries
-                    appear in the menu bar with a countdown and
-                    copy-to-clipboard actions. Decrypted state is purged
-                    automatically after
-                    <code>ttl</code> seconds.
+              <div class="step">
+                <div
+                  class="step-num"
+                  style="
+                    background: rgba(229, 192, 123, 0.15);
+                    border-color: rgba(229, 192, 123, 0.4);
+                    color: var(--yellow);
+                  "
+                >
+                  2
+                </div>
+                <div class="step-body">
+                  <h3>Build the AAD-bound payload</h3>
+                  <p>
+                    On every <code>bsh-inject</code> call, BSH increments a
+                    per-session monotonic counter and concatenates
+                    <code>LE32(counter) || type || context</code> to form the
+                    GCM AAD. The plaintext JSON payload (<code>username</code>,
+                    <code>password</code>, <code>ttl</code>, …) is then
+                    encrypted with AES-256-GCM under the session key and a fresh
+                    12-byte nonce.
+                  </p>
+                </div>
+              </div>
+
+              <div class="step">
+                <div
+                  class="step-num"
+                  style="
+                    background: rgba(229, 192, 123, 0.15);
+                    border-color: rgba(229, 192, 123, 0.4);
+                    color: var(--yellow);
+                  "
+                >
+                  3
+                </div>
+                <div class="step-body">
+                  <h3>Emit OSC 7777 to the terminal</h3>
+                  <p>
+                    BSH prints a 7-field semicolon-delimited OSC 7777 escape
+                    sequence to <code>/dev/tty</code>:
+                    <code
+                      >ESC]7777;&lt;sid&gt;;&lt;ctr&gt;;&lt;type&gt;;&lt;ctx&gt;;&lt;nonce&gt;;&lt;ct&gt;;&lt;tag&gt;BEL</code
+                    >. The escape is invisible in the rendered terminal but is
+                    captured by the agent through the same Unix-domain socket fd
+                    opened during the handshake.
+                  </p>
+                </div>
+              </div>
+
+              <div class="step">
+                <div
+                  class="step-num"
+                  style="
+                    background: rgba(229, 192, 123, 0.15);
+                    border-color: rgba(229, 192, 123, 0.4);
+                    color: var(--yellow);
+                  "
+                >
+                  4
+                </div>
+                <div class="step-body">
+                  <h3>Agent verifies and stores</h3>
+                  <p>
+                    The SDI Agent looks up the session key by
+                    <code>session_id</code>, enforces the monotonic counter to
+                    reject replays, decrypts the payload, and stores it in
+                    memory with its TTL. Entries appear in the menu bar with a
+                    countdown and copy-to-clipboard actions. Decrypted state is
+                    purged automatically after <code>ttl</code> seconds.
                   </p>
                 </div>
               </div>
@@ -1126,9 +1155,16 @@
         <div class="section-label">Supported types</div>
         <h2>Structured credential payloads.</h2>
         <p>
-          Payloads are JSON objects encrypted with AES-256-GCM before leaving
-          the shell. The agent decodes them after decryption. Unknown keys are
-          ignored — the format is designed to be extensible.
+          Payloads are flat JSON objects encrypted with AES-256-GCM before
+          leaving the shell. The <code>type</code> and <code>context</code>
+          fields travel as plaintext OSC&nbsp;7777 parameters (see
+          <a
+            class="link"
+            href="https://github.com/Digital-Defiance/bsh/blob/main/docs/rfc-sdi-osc7777.md"
+            >RFC §3.3</a
+          >), not inside the encrypted JSON — they are bound into the GCM AAD so
+          they cannot be tampered with. <code>ttl</code> and
+          <code>issued_at</code> are required; unknown keys are ignored.
         </p>
 
         <div class="split" style="margin-top: 2rem">
@@ -1138,15 +1174,17 @@
               Web login credentials, API tokens, or any short-lived secret bound
               to a URL context.
             </p>
-            <pre style="margin-top: 1rem"><code>{
-  "type": "ephemeral-auth",
-  "context": "https://app.example.com",
+            <pre
+              style="margin-top: 1rem"
+            ><code># OSC fields:  --type ephemeral-auth
+#              --context https://app.example.com
+# Encrypted JSON body:
+{
   "ttl": 300,
-  "data": {
-    "username": "alice",
-    "password": "s3cr3t",
-    "email": "alice@example.com"
-  }
+  "issued_at": 1747526400,
+  "username": "alice",
+  "password": "s3cr3t",
+  "email": "alice@example.com"
 }</code></pre>
             <div class="builtins" style="margin-top: 1rem">
               <div class="builtin">
@@ -1167,17 +1205,19 @@
               Database credentials: engine, host, port, user and password — all
               in one encrypted packet.
             </p>
-            <pre style="margin-top: 1rem"><code>{
-  "type": "db-connection",
-  "context": "postgres://localhost/mydb",
+            <pre
+              style="margin-top: 1rem"
+            ><code># OSC fields:  --type db-connection
+#              --context postgres://localhost/mydb
+# Encrypted JSON body:
+{
   "ttl": 600,
-  "data": {
-    "engine": "postgres",
-    "host": "localhost",
-    "port": 5432,
-    "user": "alice",
-    "pass": "s3cr3t"
-  }
+  "issued_at": 1747526400,
+  "engine": "postgres",
+  "host": "localhost",
+  "port": 5432,
+  "user": "alice",
+  "pass": "s3cr3t"
 }</code></pre>
             <div class="builtins" style="margin-top: 1rem">
               <div class="builtin">
@@ -1283,17 +1323,56 @@ brew install bsh</code></pre>
           <div class="step">
             <div class="step-num">4</div>
             <div class="step-body">
-              <h3>Load the SDI module and inject</h3>
+              <h3>Inject a credential</h3>
               <p>
-                In a BSH session, load <code>bsh/sdi</code> and use
-                <code>bsh-inject</code> to deliver an encrypted payload. The
-                lock icon in your menu bar will open and show the active
-                credential with a TTL countdown.
+                Confirm the lock icon is visible in your menu bar (the agent is
+                running) and that you are inside a
+                <strong>BSH session</strong> with the
+                <code>bsh/sdi</code> module loaded — <code>bsh-inject</code>
+                requires the X25519 handshake BSH performs at startup.
               </p>
-              <pre><code>zmodload bsh/sdi
-
-printf '{"username":"alice","password":"s3cr3t","ttl":300}' \
-  | bsh-inject --type ephemeral-auth --context https://app.example.com</code></pre>
+              <p>
+                Use <code>read -rs</code> to capture the password interactively
+                (no echo, never written to history) and pipe the JSON payload
+                into <code>bsh-inject</code>. History records the variable name,
+                not its value.
+              </p>
+              <p>
+                <strong style="color: var(--text-bright)"
+                  >Required fields.</strong
+                >
+                The agent rejects any payload missing
+                <code>issued_at</code> (Unix seconds), or whose
+                <code>issued_at</code> is more than <code>ttl</code> seconds in
+                the past or 60 seconds in the future —
+                <code>bsh-inject</code> reports
+                <em>"SDIAgent did not confirm delivery"</em> in that case. See
+                the
+                <a
+                  class="link"
+                  href="https://github.com/Digital-Defiance/bsh/blob/main/docs/rfc-sdi-osc7777.md"
+                  >RFC §3.6</a
+                >
+                and BSH's <code>bsh-inject</code>
+                <a
+                  class="link"
+                  href="https://github.com/Digital-Defiance/bsh#bsh-inject-usage"
+                  >reference</a
+                >
+                for the full schema.
+              </p>
+              <pre><code>IFS= read -rs BSH_PASS
+printf '{"username":"alice","password":"%s","ttl":300,"issued_at":%d}' \
+  "$BSH_PASS" "$(/bin/date +%s)" \
+  | bsh-inject --type ephemeral-auth --context https://app.example.com
+unset BSH_PASS</code></pre>
+              <p style="margin-top: 1rem; font-size: 0.875rem">
+                <strong style="color: var(--text-bright)">Note.</strong> Inside
+                a BSH shell, <code>date</code> is the BrightDate builtin and
+                does not accept <code>+%s</code>. Call
+                <code>/bin/date</code> (or <code>command date</code>) explicitly
+                to get Unix seconds.
+              </p>
             </div>
           </div>
         </div>
