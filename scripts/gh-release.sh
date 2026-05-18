@@ -31,10 +31,13 @@ if [ -z "$NOTES" ]; then
   exit 1
 fi
 
-ZIPFILE=$(ls dist/BSH-SDIAgent-*.zip 2>/dev/null | head -n 1)
+# Strip leading "v" so v1.0.2 -> 1.0.2 to match dist/BSH-SDIAgent-<version>.zip
+VERSION_BARE="${VERSION#v}"
+ZIPFILE="dist/BSH-SDIAgent-${VERSION_BARE}.zip"
 
-if [ -z "$ZIPFILE" ]; then
-  echo "Error: no dist/BSH-SDIAgent-*.zip file found" >&2
+if [ ! -f "$ZIPFILE" ]; then
+  echo "Error: $ZIPFILE not found." >&2
+  echo "       Run scripts/release.sh first, or check the --version value." >&2
   exit 1
 fi
 
