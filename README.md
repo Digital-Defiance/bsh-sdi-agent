@@ -6,6 +6,8 @@ A macOS menu bar application that acts as the **Secure Semantic Data Injection (
 
 > SDI and the OSC 7777 protocol are original BSH inventions — there is no upstream zsh equivalent.
 
+> **Scope — what this is (and isn't).** SDI is designed for **short-lived developer credentials**: database passwords for local services, ephemeral API tokens, throwaway login creds — the secrets you'd otherwise paste into a terminal, export into `$ENV`, or stash in a `.env` file. It is **not** a password manager. There is no vault, no master-password unlock, no browser autofill, no sync between machines, no long-term storage; entries live in memory only, are gated by a TTL (default 300 s), and vanish on session expiry. For long-term credential storage use **1Password / Bitwarden / Keychain**. Use SDI for the moment you'd otherwise leak a secret into shell history or `ps`.
+
 ## How it works
 
 The agent implements a four-step cryptographic protocol defined in the [BSH SDI RFC](https://github.com/Digital-Defiance/bsh/blob/main/docs/rfc-sdi-osc7777.md):
