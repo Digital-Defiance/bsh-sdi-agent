@@ -1,5 +1,13 @@
 # BSH SDI Agent
 
+<p align="center">
+  BSH SDI Agent is being deprecated in favor of <a href="https://nexus.digitaldefiance.org">BrightNexus</a> which is the next evolution of the <a href="https://github.com/Digital-Defiance/bsh/blob/main/docs/rfc-sdi-osc7777.md">SDI OSC 7777</a> which combines into a new spec/RFC, <a href="https://github.brightchain.org/docs/papers/sdi-enclave-bridge/">OSC 7777 v3 - SDI Enclave Bridge</a>.
+</p>
+
+<p align="center">
+  <img height="100" alt="brightnexus" src="https://github.com/user-attachments/assets/5c249dee-e396-483d-9214-dce26b51baea" />
+</p>
+
 ![brightdate-bsh.png](brightdate-bsh.png)
 
 A macOS menu bar application that acts as the **Secure Semantic Data Injection (SDI)** desktop agent for [BSH (BrightShell)](https://github.com/Digital-Defiance/bsh). It receives encrypted credential payloads from the `bsh-inject` shell builtin over a local Unix domain socket, decrypts them, and makes them available for actions such as clipboard injection, auto-fill, or forwarding to the system keychain — without the plaintext ever appearing in `ps`, the shell environment, or command history.
